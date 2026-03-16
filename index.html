@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI експозиция на българския пазар на труда</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="data.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a0f;
+      color: #e0e0e0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* --- SIDEBAR --- */
+    .sidebar {
+      width: 340px;
+      min-width: 340px;
+      padding: 32px 28px;
+      background: linear-gradient(180deg, #0d0d14 0%, #0a0a0f 100%);
+      overflow-y: auto;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      position: relative;
+    }
+
+    .sidebar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 1px;
+      height: 100%;
+      background: linear-gradient(180deg, rgba(120,80,255,0.15) 0%, transparent 50%, rgba(120,80,255,0.08) 100%);
+    }
+
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    .sidebar h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 8px;
+      line-height: 1.25;
+      letter-spacing: -0.5px;
+    }
+
+    .sidebar .subtitle {
+      font-size: 12.5px;
+      color: #6b7280;
+      margin-bottom: 28px;
+      line-height: 1.6;
+      font-weight: 400;
+    }
+
+    .sidebar .subtitle a {
+      color: #818cf8;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(129,140,248,0.3);
+      transition: all 0.2s;
+    }
+
+    .sidebar .subtitle a:hover {
+      color: #a5b4fc;
+      border-bottom-color: rgba(165,180,252,0.5);
+    }
+
+    .stat-block {
+      margin-bottom: 22px;
+    }
+
+    .stat-label {
+      font-size: 9.5px;
+      text-transform: uppercase;
+      color: #4b5563;
+      letter-spacing: 1.5px;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .stat-value {
+      font-size: 36px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -1px;
+    }
+
+    .stat-unit {
+      font-size: 11px;
+      color: #4b5563;
+      margin-top: 3px;
+      font-weight: 400;
+    }
+
+    /* --- EXPOSURE BAR --- */
+    .exposure-bar { margin-bottom: 22px; }
+
+    .exposure-bar .bar-container {
+      display: flex;
+      height: 24px;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 6px;
+      background: rgba(255,255,255,0.03);
+      gap: 2px;
+      padding: 2px;
+    }
+
+    .exposure-bar .bar-segment {
+      height: 100%;
+      border-radius: 4px;
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .exposure-bar .bar-segment:hover {
+      filter: brightness(1.3);
+      transform: scaleY(1.1);
+    }
+
+    .exposure-bar .bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #374151;
+      font-weight: 500;
+    }
+
+    /* --- BREAKDOWN TABLE --- */
+    .breakdown-table { width: 100%; }
+
+    .breakdown-row {
+      display: flex;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 12px;
+      transition: background 0.15s;
+      border-radius: 4px;
+      padding-left: 4px;
+      margin: 0 -4px;
+    }
+
+    .breakdown-row:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .breakdown-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 10px;
+      flex-shrink: 0;
+      box-shadow: 0 0 6px rgba(0,0,0,0.3);
+    }
+
+    .breakdown-label {
+      flex: 1;
+      color: #9ca3af;
+      font-weight: 400;
+    }
+
+    .breakdown-value {
+      text-align: right;
+      color: #d1d5db;
+      margin-left: 8px;
+      min-width: 50px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .breakdown-pct {
+      text-align: right;
+      color: #4b5563;
+      min-width: 38px;
+      margin-left: 4px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* --- METRIC ROWS --- */
+    .metric-table { width: 100%; }
+
+    .metric-row {
+      display: flex;
+      align-items: center;
+      padding: 5px 4px;
+      font-size: 12px;
+      border-radius: 4px;
+      margin: 0 -4px;
+      transition: background 0.15s;
+    }
+
+    .metric-row:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .metric-label {
+      flex: 1;
+      color: #6b7280;
+      font-weight: 400;
+    }
+
+    .metric-value {
+      color: #d1d5db;
+      text-align: right;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-bar-bg {
+      width: 50px;
+      height: 4px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 2px;
+      margin-left: 10px;
+      overflow: hidden;
+    }
+
+    .metric-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* --- SECTION DIVIDER --- */
+    .section-divider {
+      border: none;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+      margin: 18px 0;
+    }
+
+    /* --- TREEMAP --- */
+    .treemap-area {
+      flex: 1;
+      padding: 10px;
+      overflow: hidden;
+      background: #0a0a0f;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .treemap-container {
+      width: 100%;
+      flex: 1;
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    /* --- FILTER BAR --- */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.02);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      border-radius: 0 0 8px 8px;
+      flex-wrap: wrap;
+      min-height: 44px;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .filter-title {
+      font-size: 10px;
+      font-weight: 600;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      white-space: nowrap;
+    }
+
+    .filter-chips {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: #9ca3af;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    .filter-chip:hover {
+      background: rgba(255,255,255,0.08);
+      color: #d1d5db;
+    }
+
+    .filter-chip.active {
+      background: rgba(129,140,248,0.15);
+      border-color: rgba(129,140,248,0.4);
+      color: #a5b4fc;
+    }
+
+    .filter-chip.exposure-chip { position: relative; padding-left: 22px; }
+    .filter-chip.exposure-chip::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    .filter-search input {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 12px;
+      color: #d1d5db;
+      outline: none;
+      width: 180px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .filter-search input:focus {
+      border-color: rgba(129,140,248,0.4);
+      background: rgba(255,255,255,0.07);
+    }
+
+    .filter-search input::placeholder {
+      color: #4b5563;
+    }
+
+    .filter-reset {
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      color: #6b7280;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      font-weight: 500;
+      margin-left: auto;
+    }
+
+    .filter-reset:hover {
+      background: rgba(239,68,68,0.1);
+      border-color: rgba(239,68,68,0.3);
+      color: #f87171;
+    }
+
+    .treemap-cell.dimmed {
+      opacity: 0.12 !important;
+      filter: grayscale(0.8);
+    }
+
+    .treemap-group {
+      position: absolute;
+      overflow: hidden;
+      border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: 4px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .group-label {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 22px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.55);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.15) 100%);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      z-index: 5;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .group-label .group-score {
+      font-size: 9px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .treemap-cell {
+      position: absolute;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.45);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .treemap-cell:hover {
+      z-index: 10;
+      border-color: rgba(255,255,255,0.25);
+      box-shadow: 0 0 20px rgba(0,0,0,0.4), inset 0 0 30px rgba(255,255,255,0.05);
+      transform: scale(1.01);
+    }
+
+    .cell-content {
+      padding: 5px 7px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cell-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.92);
+      line-height: 1.25;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+      letter-spacing: -0.1px;
+    }
+
+    .cell-meta {
+      font-size: 9.5px;
+      color: rgba(255,255,255,0.6);
+      margin-top: 3px;
+      font-weight: 500;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+
+    /* --- TOOLTIP --- */
+    .tooltip {
+      position: fixed;
+      background: rgba(15, 15, 25, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-size: 13px;
+      pointer-events: none;
+      z-index: 1000;
+      display: none;
+      max-width: 340px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+    }
+
+    .tooltip .tt-title {
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 10px;
+      font-size: 15px;
+      letter-spacing: -0.3px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .tooltip .tt-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+      color: #6b7280;
+      font-size: 12.5px;
+    }
+
+    .tooltip .tt-row span:last-child {
+      color: #e5e7eb;
+      font-weight: 600;
+      margin-left: 24px;
+    }
+
+    .score-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.3px;
+    }
+
+    /* --- FOOTER CREDIT --- */
+    .sidebar-footer {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      font-size: 10px;
+      color: #374151;
+      line-height: 1.5;
+    }
+
+    /* --- COLOR LEGEND --- */
+    .color-legend {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      margin-bottom: 4px;
+    }
+
+    .color-legend-bar {
+      flex: 1;
+      height: 8px;
+      border-radius: 4px;
+      background: linear-gradient(90deg,
+        rgb(45, 90, 39),
+        rgb(75, 125, 55),
+        rgb(130, 130, 45),
+        rgb(170, 105, 35),
+        rgb(155, 65, 30),
+        rgb(120, 40, 25)
+      );
+    }
+
+    .color-legend-label {
+      font-size: 9px;
+      color: #4b5563;
+      font-weight: 500;
+    }
+
+    @media (max-width: 900px) {
+      .container { flex-direction: column; }
+      .sidebar { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.06); }
+      .sidebar::after { display: none; }
+      .treemap-container { height: 70vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <h1>AI експозиция на българския пазар на труда</h1>
+      <p class="subtitle">
+        Анализ на уязвимостта на всяка професия в българската икономика към AI и автоматизация.
+        Данни от <a href="https://www.nsi.bg/bg" target="_blank">НСИ</a>
+        и <a href="https://ec.europa.eu/eurostat" target="_blank">Eurostat</a> (ISCO-08).
+        <br><br>
+        <span id="occupation-count"></span> професии &middot; площ = заетост &middot; цвят = AI експозиция
+      </p>
+
+      <div class="color-legend">
+        <span class="color-legend-label">Ниска</span>
+        <div class="color-legend-bar"></div>
+        <span class="color-legend-label">Висока</span>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="stat-block">
+        <div class="stat-label">Общо работни места</div>
+        <div class="stat-value" id="total-jobs"></div>
+      </div>
+
+      <div class="stat-block">
+        <div class="stat-label">Средна експозиция</div>
+        <div class="stat-value" id="avg-exposure"></div>
+        <div class="stat-unit">претеглена по заетост, скала 0-10</div>
+      </div>
+
+      <div class="stat-block exposure-bar">
+        <div class="stat-label">Разпределение по експозиция</div>
+        <div class="bar-container" id="exposure-bar"></div>
+        <div class="bar-labels">
+          <span>0</span>
+          <span>5</span>
+          <span>10</span>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="stat-block">
+        <div class="stat-label">Разбивка</div>
+        <div class="breakdown-table" id="breakdown-table"></div>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="stat-block">
+        <div class="stat-label">Експозиция по заплата</div>
+        <div class="metric-table" id="salary-table"></div>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="stat-block">
+        <div class="stat-label">Експозиция по категория</div>
+        <div class="metric-table" id="category-table"></div>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="stat-block">
+        <div class="stat-label">Застрашени заплати</div>
+        <div class="stat-value" id="wages-exposed"></div>
+        <div class="stat-unit" id="wages-exposed-label"></div>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="stat-block">
+        <div class="stat-label">Методология</div>
+        <div style="font-size:11px;color:#6b7280;line-height:1.6;">
+          Оценките са базирани на три изследвания:
+          <br>
+          <a href="https://openai.com/index/gpts-are-gpts/" target="_blank" style="color:#818cf8;text-decoration:none;border-bottom:1px solid rgba(129,140,248,0.3);">OpenAI "GPTs are GPTs"</a> (2023)
+          <br>
+          <a href="https://www.ilo.org/publications/generative-ai-and-jobs-refined-global-index-occupational-exposure" target="_blank" style="color:#818cf8;text-decoration:none;border-bottom:1px solid rgba(129,140,248,0.3);">ILO Глобален индекс</a> (2024)
+          <br>
+          <a href="https://www.bruegel.org/working-paper/exposure-generative-artificial-intelligence-european-labour-market" target="_blank" style="color:#818cf8;text-decoration:none;border-bottom:1px solid rgba(129,140,248,0.3);">Bruegel EU анализ</a> (2024)
+          <br><br>
+          <span style="color:#4b5563;font-size:10px;">Принцип: цифров работен продукт = висока експозиция. Данни за заетост: НСИ 2024.</span>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        Данни НСИ 2024 &middot; ISCO-08
+      </div>
+    </div>
+
+    <div class="treemap-area">
+      <div class="treemap-container" id="treemap"></div>
+      <div class="filter-bar" id="filter-bar">
+        <div class="filter-group">
+          <span class="filter-title">Категория:</span>
+          <div class="filter-chips" id="category-filters"></div>
+        </div>
+        <div class="filter-group">
+          <span class="filter-title">Експозиция:</span>
+          <div class="filter-chips" id="exposure-filters"></div>
+        </div>
+        <div class="filter-group">
+          <span class="filter-title">Заплата:</span>
+          <div class="filter-chips" id="salary-filters"></div>
+        </div>
+        <div class="filter-group filter-search">
+          <input type="text" id="search-input" placeholder="Търси професия..." />
+        </div>
+        <button class="filter-reset" id="reset-filters">Изчисти</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    function getColor(score) {
+      const colors = [
+        [40, 85, 35],
+        [50, 105, 42],
+        [68, 120, 48],
+        [95, 128, 45],
+        [128, 128, 42],
+        [152, 122, 38],
+        [168, 100, 32],
+        [162, 80, 28],
+        [150, 60, 28],
+        [135, 45, 28],
+        [115, 35, 22],
+      ];
+      const idx = Math.min(Math.max(Math.round(score), 0), 10);
+      const [r, g, b] = colors[idx];
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function getScoreBadgeColor(score) {
+      if (score <= 3) return 'rgba(45,106,46,0.8)';
+      if (score <= 5) return 'rgba(107,107,46,0.8)';
+      if (score <= 7) return 'rgba(139,94,46,0.8)';
+      return 'rgba(139,46,46,0.8)';
+    }
+
+    function getMetricBarColor(score) {
+      if (score <= 3) return 'rgb(68, 120, 48)';
+      if (score <= 5) return 'rgb(152, 122, 38)';
+      if (score <= 7) return 'rgb(168, 100, 32)';
+      return 'rgb(150, 60, 28)';
+    }
+
+    function formatNumber(n) {
+      if (n >= 1000000000) return (n / 1000000000).toFixed(1) + ' млрд.';
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'М';
+      if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
+      return n.toString();
+    }
+
+    function formatBGN(n) {
+      return new Intl.NumberFormat('bg-BG').format(n) + ' лв.';
+    }
+
+    // Stats
+    const totalJobs = occupations.reduce((s, o) => s + o.employment, 0);
+    const weightedExposure = occupations.reduce((s, o) => s + o.ai_score * o.employment, 0) / totalJobs;
+
+    document.getElementById('total-jobs').textContent = formatNumber(totalJobs);
+    document.getElementById('avg-exposure').textContent = weightedExposure.toFixed(1);
+    document.getElementById('occupation-count').textContent = occupations.length;
+
+    // Exposure breakdown
+    const exposureBuckets = [
+      { label: 'Минимална (0-1)', min: 0, max: 1, color: getColor(0.5) },
+      { label: 'Ниска (2-3)', min: 2, max: 3, color: getColor(2.5) },
+      { label: 'Умерена (4-5)', min: 4, max: 5, color: getColor(4.5) },
+      { label: 'Висока (6-7)', min: 6, max: 7, color: getColor(6.5) },
+      { label: 'Много висока (8-10)', min: 8, max: 10, color: getColor(9) },
+    ];
+
+    const bucketData = exposureBuckets.map(b => {
+      const jobs = occupations.filter(o => o.ai_score >= b.min && o.ai_score <= b.max);
+      const count = jobs.reduce((s, o) => s + o.employment, 0);
+      return { ...b, count, pct: count / totalJobs };
+    });
+
+    // Exposure bar
+    const barContainer = document.getElementById('exposure-bar');
+    bucketData.forEach(b => {
+      const seg = document.createElement('div');
+      seg.className = 'bar-segment';
+      seg.style.width = (b.pct * 100) + '%';
+      seg.style.background = b.color;
+      barContainer.appendChild(seg);
+    });
+
+    // Breakdown table
+    const breakdownTable = document.getElementById('breakdown-table');
+    bucketData.forEach(b => {
+      const row = document.createElement('div');
+      row.className = 'breakdown-row';
+      row.innerHTML = `
+        <div class="breakdown-dot" style="background:${b.color}"></div>
+        <div class="breakdown-label">${b.label}</div>
+        <div class="breakdown-value">${formatNumber(b.count)}</div>
+        <div class="breakdown-pct">${(b.pct * 100).toFixed(0)}%</div>
+      `;
+      breakdownTable.appendChild(row);
+    });
+
+    // Salary table
+    const salaryBuckets = [
+      { label: '< 1 500 лв.', min: 0, max: 1500 },
+      { label: '1 500 – 2 000', min: 1500, max: 2000 },
+      { label: '2 000 – 3 000', min: 2000, max: 3000 },
+      { label: '3 000 – 4 500', min: 3000, max: 4500 },
+      { label: '> 4 500 лв.', min: 4500, max: 99999 },
+    ];
+
+    const salaryTable = document.getElementById('salary-table');
+    salaryBuckets.forEach(sb => {
+      const jobs = occupations.filter(o => o.avg_salary_bgn >= sb.min && o.avg_salary_bgn < sb.max);
+      if (jobs.length === 0) return;
+      const totalEmp = jobs.reduce((s, o) => s + o.employment, 0);
+      const avgScore = jobs.reduce((s, o) => s + o.ai_score * o.employment, 0) / totalEmp;
+      const row = document.createElement('div');
+      row.className = 'metric-row';
+      row.innerHTML = `
+        <div class="metric-label">${sb.label}</div>
+        <div class="metric-value">${avgScore.toFixed(1)}</div>
+        <div class="metric-bar-bg"><div class="metric-bar-fill" style="width:${avgScore * 10}%;background:${getMetricBarColor(avgScore)}"></div></div>
+      `;
+      salaryTable.appendChild(row);
+    });
+
+    // Category table
+    const categories = [...new Set(occupations.map(o => o.category))];
+    const categoryTable = document.getElementById('category-table');
+    const categoryData = categories.map(cat => {
+      const jobs = occupations.filter(o => o.category === cat);
+      const totalEmp = jobs.reduce((s, o) => s + o.employment, 0);
+      const avgScore = jobs.reduce((s, o) => s + o.ai_score * o.employment, 0) / totalEmp;
+      return { cat, totalEmp, avgScore };
+    }).sort((a, b) => b.avgScore - a.avgScore);
+
+    categoryData.forEach(cd => {
+      const row = document.createElement('div');
+      row.className = 'metric-row';
+      row.innerHTML = `
+        <div class="metric-label">${cd.cat}</div>
+        <div class="metric-value">${cd.avgScore.toFixed(1)}</div>
+        <div class="metric-bar-bg"><div class="metric-bar-fill" style="width:${cd.avgScore * 10}%;background:${getMetricBarColor(cd.avgScore)}"></div></div>
+      `;
+      categoryTable.appendChild(row);
+    });
+
+    // Wages exposed
+    const highExposureJobs = occupations.filter(o => o.ai_score >= 7);
+    const wagesExposed = highExposureJobs.reduce((s, o) => s + o.employment * o.avg_salary_bgn * 12, 0);
+    document.getElementById('wages-exposed').textContent = formatNumber(wagesExposed) + ' лв.';
+    document.getElementById('wages-exposed-label').textContent = 'годишни заплати в професии с висока експозиция (7+)';
+
+    // Build nested treemap grouped by category, sorted by score within groups
+    function buildTreemap() {
+      const container = document.getElementById('treemap');
+      container.innerHTML = '';
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      // Build nested data: category -> occupations (sorted by ai_score desc within each)
+      const grouped = {};
+      occupations.forEach(o => {
+        if (!grouped[o.category]) grouped[o.category] = [];
+        grouped[o.category].push({ ...o });
+      });
+
+      // Sort occupations within each category by score (high first), then by employment
+      Object.values(grouped).forEach(arr => {
+        arr.sort((a, b) => b.ai_score - a.ai_score || b.employment - a.employment);
+      });
+
+      const nestedData = {
+        name: 'root',
+        children: Object.entries(grouped).map(([cat, jobs]) => ({
+          name: cat,
+          children: jobs
+        }))
+      };
+
+      const HEADER_H = 22;
+
+      const root = d3.hierarchy(nestedData)
+        .sum(d => d.employment || 0)
+        .sort((a, b) => b.value - a.value);
+
+      d3.treemap()
+        .size([width, height])
+        .paddingOuter(3)
+        .paddingTop(HEADER_H + 2)
+        .paddingInner(2)
+        .round(true)
+        .tile(d3.treemapSquarify.ratio(1.3))
+        (root);
+
+      const tooltip = document.getElementById('tooltip');
+      let cellIndex = 0;
+
+      // Render category groups
+      root.children.forEach(group => {
+        const gw = group.x1 - group.x0;
+        const gh = group.y1 - group.y0;
+
+        // Group container
+        const groupEl = document.createElement('div');
+        groupEl.className = 'treemap-group';
+        groupEl.style.left = group.x0 + 'px';
+        groupEl.style.top = group.y0 + 'px';
+        groupEl.style.width = gw + 'px';
+        groupEl.style.height = gh + 'px';
+
+        // Category label
+        if (gw > 50) {
+          const catJobs = group.children || [];
+          const catTotal = catJobs.reduce((s, c) => s + (c.value || 0), 0);
+          const catAvg = catJobs.reduce((s, c) => s + (c.data.ai_score || 0) * (c.value || 0), 0) / (catTotal || 1);
+
+          const label = document.createElement('div');
+          label.className = 'group-label';
+          label.innerHTML = gw > 120
+            ? `${group.data.name} <span class="group-score">ср. ${catAvg.toFixed(1)}/10</span>`
+            : group.data.name;
+          groupEl.appendChild(label);
+        }
+
+        container.appendChild(groupEl);
+
+        // Render occupation cells within group
+        group.leaves().forEach(leaf => {
+          const d = leaf.data;
+          const w = leaf.x1 - leaf.x0;
+          const h = leaf.y1 - leaf.y0;
+
+          const cell = document.createElement('div');
+          cell.className = 'treemap-cell';
+          cell.style.left = leaf.x0 + 'px';
+          cell.style.top = leaf.y0 + 'px';
+          cell.style.width = w + 'px';
+          cell.style.height = h + 'px';
+          cell.style.background = getColor(d.ai_score);
+          cell.style.opacity = '0';
+          cell.style.animation = `fadeIn 0.35s ${cellIndex * 4}ms forwards`;
+          cell.setAttribute('data-name', d.name);
+          cellIndex++;
+
+          const content = document.createElement('div');
+          content.className = 'cell-content';
+
+          if (w > 50 && h > 24) {
+            const title = document.createElement('div');
+            title.className = 'cell-title';
+            title.textContent = d.name;
+            if (w < 100) title.style.fontSize = '9px';
+            content.appendChild(title);
+          }
+
+          if (w > 60 && h > 38) {
+            const meta = document.createElement('div');
+            meta.className = 'cell-meta';
+            meta.textContent = `${d.ai_score}/10 · ${formatNumber(d.employment)} раб. места`;
+            content.appendChild(meta);
+          }
+
+          cell.appendChild(content);
+
+          cell.addEventListener('mouseenter', () => {
+            tooltip.style.display = 'block';
+            tooltip.innerHTML = `
+              <div class="tt-title">${d.name}</div>
+              <div class="tt-row"><span>Категория</span><span>${d.category}</span></div>
+              <div class="tt-row"><span>AI експозиция</span><span><span class="score-badge" style="background:${getScoreBadgeColor(d.ai_score)}">${d.ai_score}/10</span></span></div>
+              <div class="tt-row"><span>Заети лица</span><span>${d.employment.toLocaleString('bg-BG')}</span></div>
+              <div class="tt-row"><span>Ср. заплата</span><span>${formatBGN(d.avg_salary_bgn)}/мес.</span></div>
+              <div class="tt-row"><span>Годишен ФРЗ</span><span>${formatBGN(d.employment * d.avg_salary_bgn * 12)}</span></div>
+            `;
+          });
+
+          cell.addEventListener('mousemove', (e) => {
+            let x = e.clientX + 16;
+            let y = e.clientY + 16;
+            const rect = tooltip.getBoundingClientRect();
+            if (x + rect.width > window.innerWidth) x = e.clientX - rect.width - 16;
+            if (y + rect.height > window.innerHeight) y = e.clientY - rect.height - 16;
+            tooltip.style.left = x + 'px';
+            tooltip.style.top = y + 'px';
+          });
+
+          cell.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+          });
+
+          container.appendChild(cell);
+        });
+      });
+    }
+
+    // Animation keyframes
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // --- FILTER SYSTEM ---
+    const filters = {
+      categories: new Set(),
+      exposures: new Set(),
+      salaries: new Set(),
+      search: ''
+    };
+
+    const allCategories = [...new Set(occupations.map(o => o.category))];
+    const exposureLevels = [
+      { id: 'low', label: '0-3', min: 0, max: 3, color: getColor(1.5) },
+      { id: 'mid', label: '4-5', min: 4, max: 5, color: getColor(4.5) },
+      { id: 'high', label: '6-7', min: 6, max: 7, color: getColor(6.5) },
+      { id: 'vhigh', label: '8-10', min: 8, max: 10, color: getColor(9) },
+    ];
+    const salaryLevels = [
+      { id: 's1', label: '< 1 500', min: 0, max: 1500 },
+      { id: 's2', label: '1.5-2.5K', min: 1500, max: 2500 },
+      { id: 's3', label: '2.5-4K', min: 2500, max: 4000 },
+      { id: 's4', label: '> 4 000', min: 4000, max: 99999 },
+    ];
+
+    // Build category filter chips
+    const catFilters = document.getElementById('category-filters');
+    allCategories.forEach(cat => {
+      const chip = document.createElement('span');
+      chip.className = 'filter-chip';
+      chip.textContent = cat;
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('active');
+        if (filters.categories.has(cat)) filters.categories.delete(cat);
+        else filters.categories.add(cat);
+        applyFilters();
+      });
+      catFilters.appendChild(chip);
+    });
+
+    // Build exposure filter chips
+    const expFilters = document.getElementById('exposure-filters');
+    exposureLevels.forEach(lvl => {
+      const chip = document.createElement('span');
+      chip.className = 'filter-chip exposure-chip';
+      chip.textContent = lvl.label;
+      chip.style.setProperty('--dot-color', lvl.color);
+      chip.querySelector || (chip.style.cssText += '');
+      // Set the dot color via inline style on pseudo
+      const styleTag = document.createElement('style');
+      styleTag.textContent = `.filter-chip.exposure-chip[data-id="${lvl.id}"]::before { background: ${lvl.color}; }`;
+      document.head.appendChild(styleTag);
+      chip.setAttribute('data-id', lvl.id);
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('active');
+        if (filters.exposures.has(lvl.id)) filters.exposures.delete(lvl.id);
+        else filters.exposures.add(lvl.id);
+        applyFilters();
+      });
+      expFilters.appendChild(chip);
+    });
+
+    // Build salary filter chips
+    const salFilters = document.getElementById('salary-filters');
+    salaryLevels.forEach(lvl => {
+      const chip = document.createElement('span');
+      chip.className = 'filter-chip';
+      chip.textContent = lvl.label;
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('active');
+        if (filters.salaries.has(lvl.id)) filters.salaries.delete(lvl.id);
+        else filters.salaries.add(lvl.id);
+        applyFilters();
+      });
+      salFilters.appendChild(chip);
+    });
+
+    // Search input
+    const searchInput = document.getElementById('search-input');
+    searchInput.addEventListener('input', (e) => {
+      filters.search = e.target.value.toLowerCase();
+      applyFilters();
+    });
+
+    // Reset button
+    document.getElementById('reset-filters').addEventListener('click', () => {
+      filters.categories.clear();
+      filters.exposures.clear();
+      filters.salaries.clear();
+      filters.search = '';
+      searchInput.value = '';
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      applyFilters();
+    });
+
+    function matchesFilters(occ) {
+      if (filters.categories.size > 0 && !filters.categories.has(occ.category)) return false;
+      if (filters.exposures.size > 0) {
+        const matchExp = exposureLevels.some(lvl =>
+          filters.exposures.has(lvl.id) && occ.ai_score >= lvl.min && occ.ai_score <= lvl.max
+        );
+        if (!matchExp) return false;
+      }
+      if (filters.salaries.size > 0) {
+        const matchSal = salaryLevels.some(lvl =>
+          filters.salaries.has(lvl.id) && occ.avg_salary_bgn >= lvl.min && occ.avg_salary_bgn < lvl.max
+        );
+        if (!matchSal) return false;
+      }
+      if (filters.search && !occ.name.toLowerCase().includes(filters.search)) return false;
+      return true;
+    }
+
+    function applyFilters() {
+      const hasAnyFilter = filters.categories.size > 0 || filters.exposures.size > 0 ||
+                           filters.salaries.size > 0 || filters.search.length > 0;
+      document.querySelectorAll('.treemap-cell').forEach(cell => {
+        const name = cell.getAttribute('data-name');
+        const occ = occupations.find(o => o.name === name);
+        if (!occ) return;
+        if (!hasAnyFilter || matchesFilters(occ)) {
+          cell.classList.remove('dimmed');
+        } else {
+          cell.classList.add('dimmed');
+        }
+      });
+    }
+
+    buildTreemap();
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(buildTreemap, 200);
+    });
+  </script>
+</body>
+</html>
