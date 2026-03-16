@@ -717,8 +717,8 @@
       return n.toString();
     }
 
-    function formatBGN(n) {
-      return new Intl.NumberFormat('bg-BG').format(n) + ' лв.';
+    function formatEUR(n) {
+      return new Intl.NumberFormat('bg-BG').format(n) + ' €';
     }
 
     // Stats
@@ -770,16 +770,16 @@
 
     // Salary table
     const salaryBuckets = [
-      { label: '< 1 500 лв.', min: 0, max: 1500 },
-      { label: '1 500 – 2 000', min: 1500, max: 2000 },
-      { label: '2 000 – 3 000', min: 2000, max: 3000 },
-      { label: '3 000 – 4 500', min: 3000, max: 4500 },
-      { label: '> 4 500 лв.', min: 4500, max: 99999 },
+      { label: '< 750 €', min: 0, max: 750 },
+      { label: '750 – 1 000 €', min: 750, max: 1000 },
+      { label: '1 000 – 1 500 €', min: 1000, max: 1500 },
+      { label: '1 500 – 2 300 €', min: 1500, max: 2300 },
+      { label: '> 2 300 €', min: 2300, max: 99999 },
     ];
 
     const salaryTable = document.getElementById('salary-table');
     salaryBuckets.forEach(sb => {
-      const jobs = occupations.filter(o => o.avg_salary_bgn >= sb.min && o.avg_salary_bgn < sb.max);
+      const jobs = occupations.filter(o => o.avg_salary_eur >= sb.min && o.avg_salary_eur < sb.max);
       if (jobs.length === 0) return;
       const totalEmp = jobs.reduce((s, o) => s + o.employment, 0);
       const avgScore = jobs.reduce((s, o) => s + o.ai_score * o.employment, 0) / totalEmp;
@@ -816,8 +816,8 @@
 
     // Wages exposed
     const highExposureJobs = occupations.filter(o => o.ai_score >= 7);
-    const wagesExposed = highExposureJobs.reduce((s, o) => s + o.employment * o.avg_salary_bgn * 12, 0);
-    document.getElementById('wages-exposed').textContent = formatNumber(wagesExposed) + ' лв.';
+    const wagesExposed = highExposureJobs.reduce((s, o) => s + o.employment * o.avg_salary_eur * 12, 0);
+    document.getElementById('wages-exposed').textContent = formatNumber(wagesExposed) + ' €';
     document.getElementById('wages-exposed-label').textContent = 'годишни заплати в професии с висока експозиция (7+)';
 
     // Build nested treemap grouped by category, sorted by score within groups
@@ -939,8 +939,8 @@
               <div class="tt-row"><span>Категория</span><span>${d.category}</span></div>
               <div class="tt-row"><span>AI експозиция</span><span><span class="score-badge" style="background:${getScoreBadgeColor(d.ai_score)}">${d.ai_score}/10</span></span></div>
               <div class="tt-row"><span>Заети лица</span><span>${d.employment.toLocaleString('bg-BG')}</span></div>
-              <div class="tt-row"><span>Ср. заплата</span><span>${formatBGN(d.avg_salary_bgn)}/мес.</span></div>
-              <div class="tt-row"><span>Годишен ФРЗ</span><span>${formatBGN(d.employment * d.avg_salary_bgn * 12)}</span></div>
+              <div class="tt-row"><span>Ср. заплата</span><span>${formatEUR(d.avg_salary_eur)}/мес.</span></div>
+              <div class="tt-row"><span>Годишен ФРЗ</span><span>${formatEUR(d.employment * d.avg_salary_eur * 12)}</span></div>
             `;
           });
 
@@ -989,10 +989,10 @@
       { id: 'vhigh', label: '8-10', min: 8, max: 10, color: getColor(9) },
     ];
     const salaryLevels = [
-      { id: 's1', label: '< 1 500', min: 0, max: 1500 },
-      { id: 's2', label: '1.5-2.5K', min: 1500, max: 2500 },
-      { id: 's3', label: '2.5-4K', min: 2500, max: 4000 },
-      { id: 's4', label: '> 4 000', min: 4000, max: 99999 },
+      { id: 's1', label: '< 750€', min: 0, max: 750 },
+      { id: 's2', label: '750-1.2K€', min: 750, max: 1200 },
+      { id: 's3', label: '1.2-2K€', min: 1200, max: 2000 },
+      { id: 's4', label: '> 2K€', min: 2000, max: 99999 },
     ];
 
     // Build category filter chips
@@ -1075,7 +1075,7 @@
       }
       if (filters.salaries.size > 0) {
         const matchSal = salaryLevels.some(lvl =>
-          filters.salaries.has(lvl.id) && occ.avg_salary_bgn >= lvl.min && occ.avg_salary_bgn < lvl.max
+          filters.salaries.has(lvl.id) && occ.avg_salary_eur >= lvl.min && occ.avg_salary_eur < lvl.max
         );
         if (!matchSal) return false;
       }
